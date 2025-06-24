@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>武汉东新车辆录入系统</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  
+  <!-- 配置Tailwind自定义主题 -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#0072BC',     // 武汉东湖高新主色调-蓝色
+            secondary: '#36B37E',   // 辅助色-绿色
+            accent: '#FF7D00',      // 强调色-橙色
+            neutral: {
+              100: '#F5F7FA',
+              200: '#E4E7ED',
+              300: '#C0C4CC',
+              400: '#909399',
+              500: '#606266',
+              600: '#303133',
+              700: '#1E1E1E',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          boxShadow: {
+            'card': '0 4px 12px rgba(0, 0, 0, 0.05)',
+            'hover': '0 8px 20px rgba(0, 114, 188, 0.12)',
+          }
+        },
+      }
+    }
+  </script>
+  
+  <!-- 自定义工具类 -->
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .text-shadow {
+        text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      }
+      .bg-gradient-primary {
+        background: linear-gradient(135deg, #0072BC 0%, #005AA0 100%);
+      }
+      .input-focus {
+        @apply border-primary ring-2 ring-primary/20 outline-none transition-all duration-300;
+      }
+      .btn-hover {
+        @apply transform translate-y-[-2px] shadow-hover transition-all duration-300;
+      }
+    }
+  </style>
+  
+  <style>
+    /* 全局动画 */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .animate-fadeIn {
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+    
+    /* 表单输入动画 */
+    .form-input {
+      transition: all 0.3s ease;
+    }
+    
+    .form-input:focus {
+      transform: scale(1.02);
+    }
+  </style>
+</head>
+
+<body class="font-sans bg-neutral-100 min-h-screen flex flex-col">
+  <!-- 顶部导航 -->
+  <header class="bg-white shadow-sm sticky top-0 z-50 transition-all duration-300">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center space-x-2">
+        <i class="fa fa-car text-primary text-2xl"></i>
+        <h1 class="text-xl font-bold text-neutral-700">武汉东新车辆录入系统</h1>
+      </div>
+      <div class="flex items-center space-x-4">
+        <a href="statistics.html" class="px-4 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors flex items-center">
+          <i class="fa fa-bar-chart mr-2"></i> 数据统计
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="flex-grow container mx-auto px-4 py-8">
+    <!-- 页面标题 -->
+    <div class="mb-8 animate-fadeIn" style="animation-delay: 0.1s">
+      <h2 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-neutral-700 mb-2">车辆出入登记</h2>
+      <p class="text-neutral-500 max-w-2xl">请填写以下车辆信息完成出入登记，系统将自动记录时间并统计数据。</p>
+    </div>
+    
+    <!-- 录入表单卡片 -->
+    <div class="bg-white rounded-2xl shadow-card p-6 md:p-8 max-w-3xl mx-auto animate-fadeIn" style="animation-delay: 0.2s">
+      <form id="vehicleForm" class="space-y-6">
+        <!-- 车牌号码 -->
+        <div class="space-y-2">
+          <label for="plateNumber" class="flex items-center text-neutral-700 font-medium">
+            车牌号码 <span class="text-red-500 ml-1">*</span>
+            <i class="fa fa-info-circle text-primary ml-2 text-sm" title="请输入正确的车牌号码，例如：鄂A12345"></i>
+          </label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i class="fa fa-car text-neutral-400"></i>
+            </div>
+            <input 
+              type="text" 
+              id="plateNumber" 
+              name="plateNumber" 
+              class="form-input w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-lg focus:input-focus"
+              placeholder="请输入车牌号码"
+              required
+            >
+            <div class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400" id="plateStatus">
+              <i class="fa fa-circle-o"></i>
+            </div>
+          </div>
+          <p class="text-red-500 text-sm hidden" id="plateError">请输入正确的车牌号码</p>
+        </div>
+        
+        <!-- 车主姓名 -->
+        <div class="space-y-2">
+          <label for="ownerName" class="text-neutral-700 font-medium">车主姓名 <span class="text-red-500 ml-1">*</span></label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i class="fa fa-user text-neutral-400"></i>
+            </div>
+            <input 
+              type="text" 
+              id="ownerName" 
+              name="ownerName" 
+              class="form-input w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-lg focus:input-focus"
+              placeholder="请输入车主姓名"
+              required
+            >
+          </div>
+        </div>
+        
+        <!-- 联系电话 -->
+        <div class="space-y-2">
+          <label for="phoneNumber" class="text-neutral-700 font-medium">联系电话 <span class="text-red-500 ml-1">*</span></label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <i class="fa fa-phone text-neutral-400"></i>
+            </div>
+            <input 
+              type="tel" 
+              id="phoneNumber" 
+              name="phoneNumber" 
+              class="form-input w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-lg focus:input-focus"
+              placeholder="请输入联系电话"
+              required
+            >
+            <div class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400" id="phoneStatus">
+              <i class="fa fa-circle-o"></i>
+            </div>
+          </div>
+          <p class="text-red-500 text-sm hidden" id="phoneError">请输入正确的手机号码</p>
+        </div>
+        
+        <!-- 出入时间 -->
+        <div class="space-y-2">
+          <label for="entryTime" class="text-neutral-700 font-medium">出入时间 <span class="text-red-500 ml-1">*</span></label>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fa fa-calendar text-neutral-400"></i>
+              </div>
+              <input 
+                type="date" 
+                id="entryDate" 
+                name="entryDate" 
+                class="form-input w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-lg focus:input-focus"
+                value=""
+                required
+              >
+            </div>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fa fa-clock-o text-neutral-400"></i>
+              </div>
+              <input 
+                type="time" 
+                id="entryTime" 
+                name="entryTime" 
+                class="form-input w-full pl-10 pr-4 py-3 border border-neutral-200 rounded-lg focus:input-focus"
+                value=""
+                required
+              >
+            </div>
+          </div>
+        </div>
+        
+        <!-- 提交按钮 -->
+        <div class="pt-4">
+          <button 
+            type="submit" 
+            class="w-full bg-gradient-primary text-white font-medium py-3 px-6 rounded-lg shadow-lg hover:btn-hover flex items-center justify-center"
+          >
+            <i class="fa fa-check mr-2"></i> 提交登记信息
+          </button>
+        </div>
+      </form>
+    </div>
+    
+    <!-- 提交成功提示（默认隐藏） -->
+    <div id="successModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+      <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 text-center transform transition-all">
+        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <i class="fa fa-check text-2xl text-green-500"></i>
+        </div>
+        <h3 class="text-xl font-bold text-neutral-700 mb-2">登记成功！</h3>
+        <p class="text-neutral-500 mb-6" id="successMessage">您的车辆信息已成功记录</p>
+        <div class="flex space-x-4 justify-center">
+          <button id="newEntryBtn" class="px-6 py-2 border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-100 transition-colors">
+            继续登记
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 页脚 -->
+  <footer class="bg-white border-t border-neutral-200 py-6 mt-12">
+    <div class="container mx-auto px-4 text-center text-neutral-500 text-sm">
+      <p>© 2025 武汉东湖新技术开发区车辆管理系统. 保留所有权利.</p>
+      <p class="mt-2">技术支持: admin@dongxin.gov.cn</p>
+    </div>
+  </footer>
+
+  <script>
+    // 页面滚动时导航栏样式变化
+    window.addEventListener('scroll', function() {
+      const header = document.querySelector('header');
+      if (window.scrollY > 10) {
+        header.classList.add('py-2', 'shadow');
+        header.classList.remove('py-3');
+      } else {
+        header.classList.add('py-3');
+        header.classList.remove('py-2', 'shadow');
+      }
+    });
+    
+    // 车牌号码验证
+    const plateInput = document.getElementById('plateNumber');
+    const plateStatus = document.getElementById('plateStatus');
+    const plateError = document.getElementById('plateError');
+    
+    plateInput.addEventListener('blur', function() {
+      const plateRegex = /^[京津沪渝冀豫云辽黑湘皖鲁新苏浙赣鄂桂甘晋蒙陕吉闽贵粤青藏川宁琼使领A-Z]{1}[A-Z]{1}[A-Z0-9]{4}[A-Z0-9挂学警港澳]{1}$/;
+      if (this.value.trim() && plateRegex.test(this.value)) {
+        plateStatus.innerHTML = '<i class="fa fa-check text-green-500"></i>';
+        plateError.classList.add('hidden');
+      } else {
+        plateStatus.innerHTML = '<i class="fa fa-times text-red-500"></i>';
+        plateError.classList.remove('hidden');
+      }
+    });
+    
+    // 手机号码验证
+    const phoneInput = document.getElementById('phoneNumber');
+    const phoneStatus = document.getElementById('phoneStatus');
+    const phoneError = document.getElementById('phoneError');
+    
+    phoneInput.addEventListener('blur', function() {
+      const phoneRegex = /^1[3-9]\d{9}$/;
+      if (this.value.trim() && phoneRegex.test(this.value)) {
+        phoneStatus.innerHTML = '<i class="fa fa-check text-green-500"></i>';
+        phoneError.classList.add('hidden');
+      } else {
+        phoneStatus.innerHTML = '<i class="fa fa-times text-red-500"></i>';
+        phoneError.classList.remove('hidden');
+      }
+    });
+    
+    // 自动填充当前日期和时间
+    document.addEventListener('DOMContentLoaded', function() {
+      const today = new Date();
+      const date = today.toISOString().split('T')[0];
+      const time = today.toISOString().split('T')[1].split('.')[0];
+      
+      document.getElementById('entryDate').value = date;
+      document.getElementById('entryTime').value = time;
+    });
+    
+    // 表单提交处理
+    const vehicleForm = document.getElementById('vehicleForm');
+    const successModal = document.getElementById('successModal');
+    const successMessage = document.getElementById('successMessage');
+    
+    vehicleForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      // 简单验证
+      if (!plateInput.value.trim() || !ownerName.value.trim() || !phoneInput.value.trim() || 
+          !document.getElementById('entryDate').value || !document.getElementById('entryTime').value) {
+        alert('请填写所有必填字段');
+        return;
+      }
+      
+      // 模拟提交成功
+      successMessage.textContent = `车辆 ${plateInput.value} 已于 ${new Date().toLocaleString()} 登记成功`;
+      successModal.classList.remove('hidden');
+      
+      // 添加动画效果
+      const modalContent = successModal.querySelector('div');
+      modalContent.classList.add('scale-95');
+      setTimeout(() => {
+        modalContent.classList.remove('scale-95');
+        modalContent.classList.add('scale-100');
+      }, 10);
+      
+      // 滚动到顶部
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      // 保存数据到本地存储（模拟数据库）
+      saveVehicleData({
+        plateNumber: plateInput.value,
+        ownerName: ownerName.value,
+        phoneNumber: phoneNumber.value,
+        entryTime: `${document.getElementById('entryDate').value} ${document.getElementById('entryTime').value}`
+      });
+    });
+    
+    // 继续登记按钮
+    const newEntryBtn = document.getElementById('newEntryBtn');
+    newEntryBtn.addEventListener('click', function() {
+      successModal.classList.add('hidden');
+      vehicleForm.reset();
+      
+      // 重置状态图标
+      plateStatus.innerHTML = '<i class="fa fa-circle-o"></i>';
+      phoneStatus.innerHTML = '<i class="fa fa-circle-o"></i>';
+      plateError.classList.add('hidden');
+      phoneError.classList.add('hidden');
+      
+      // 重新填充当前时间
+      const today = new Date();
+      const date = today.toISOString().split('T')[0];
+      const time = today.toISOString().split('T')[1].split('.')[0];
+      
+      document.getElementById('entryDate').value = date;
+      document.getElementById('entryTime').value = time;
+    });
+    
+    // 保存车辆数据到本地存储
+    function saveVehicleData(data) {
+      let vehicleData = JSON.parse(localStorage.getItem('wuhanVehicleData')) || [];
+      vehicleData.push({
+        ...data,
+        id: Date.now(),
+        timestamp: new Date().getTime()
+      });
+      localStorage.setItem('wuhanVehicleData', JSON.stringify(vehicleData));
+    }
+  </script>
+</body>
+</html>
